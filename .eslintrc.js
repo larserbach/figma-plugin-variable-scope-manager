@@ -1,5 +1,6 @@
 /* eslint-env node */
 module.exports = {
+files: ["src/**/*.ts", "src/**/*.tsx"], // Your TypeScript files extension,
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',

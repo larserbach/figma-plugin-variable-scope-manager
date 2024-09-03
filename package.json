@@ -25,6 +25,7 @@
     "id": "batch-scope-variables",
     "name": "Batch Scope Variables",
     "main": "src/main.ts",
-    "ui": "src/ui.tsx"
+    "ui": "src/ui.tsx",
+    "documentAccess": "dynamic-page"
   }
 }
