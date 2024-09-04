@@ -1,8 +1,9 @@
 import { on, showUI } from '@create-figma-plugin/utilities'
 
-import { ResizeWindowHandler } from './types'
+import { ResizeWindowHandler, VariableItem } from './types'
 
-export default function () {
+export default async function () {
+  console.log("- - - - main ts - - - - -")
   on<ResizeWindowHandler>(
     'RESIZE_WINDOW',
     function (windowSize: { width: number; height: number }) {
@@ -16,7 +17,8 @@ export default function () {
   }
 
   const data = {
-    greeting: "hello world"
+    greeting: "hello world",
+    variableList: await main()
   }
 
   showUI(options, data)
@@ -24,20 +26,32 @@ export default function () {
 
   // # # # # # # # # # # # # # # #
 
-  console.log("- - - - main ts - - - - -")
 
 
-  async function main() {
+  // This allready works 
+  async function changeScope(resolvedType: VariableResolvedDataType, filterString: string) {
     const localVariables = await figma.variables.getLocalVariablesAsync();
-    // console.log(localVariables)
-
     localVariables.forEach(variable => {
-      console.log(variable.name)
-      console.log(variable.resolvedType)
-      console.log(`scopes: ${variable.scopes.join(" ")}`)
+      if (variable.resolvedType == resolvedType && variable.name.includes(filterString)){
+      variable.scopes = ["CORNER_RADIUS"]}
     }); 
   }
+  
+  async function main() {
+    const localVariables = await figma.variables.getLocalVariablesAsync();
+    console.log(localVariables)
 
-  main()
+    const variableList : VariableItem[] = localVariables.map(variable => {
+      const {id, name, scopes, resolvedType} = variable
+      return {id, name, scopes, resolvedType}
+    })
+
+    console.log(variableList)
+
+    return variableList
+  }
+
+  // main()
+  // changeScope('FLOAT', 'corner')
 
 }

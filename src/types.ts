@@ -4,3 +4,10 @@ export interface ResizeWindowHandler extends EventHandler {
   name: 'RESIZE_WINDOW'
   handler: (windowSize: { width: number; height: number }) => void
 }
+
+export interface VariableItem {
+  id: string;
+  name: string;
+  scopes: VariableScope[];
+  resolvedType: VariableResolvedDataType
+}

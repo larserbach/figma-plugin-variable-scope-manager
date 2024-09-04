@@ -1,15 +1,22 @@
-import { render, Container, Text, VerticalSpace, useWindowResize, Checkbox, IconCornerRadius32, Inline } from '@create-figma-plugin/ui'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { render, Container, Text, VerticalSpace, useWindowResize, Checkbox} from '@create-figma-plugin/ui'
 import { emit } from '@create-figma-plugin/utilities'
 import {h} from 'preact'
 
-import { ResizeWindowHandler } from './types'
+import { ResizeWindowHandler, VariableItem} from './types'
 import { useCallback, useState } from 'preact/hooks';
 import styles from './styles.css'
 import {customIcon} from './customIcons'
 
 
 
-function Plugin(props: { greeting: string }) {
+
+
+function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
+
+  console.log('PLUGIN')
+  // console.log(props.variableList)
+  
   function onWindowResize(windowSize: { width: number; height: number }) {
     emit<ResizeWindowHandler>('RESIZE_WINDOW', windowSize)
   }
@@ -23,6 +30,7 @@ function Plugin(props: { greeting: string }) {
 
   // State Vars
 
+  const [variableList, setVariableList] = useState<VariableItem[]>(props.variableList)
 
   const [allScopes, setAllScopes] = useState<boolean>(true)
   const [cornerRadius, setCornerRadius] = useState<boolean>(true)
@@ -140,139 +148,156 @@ function Plugin(props: { greeting: string }) {
     if (newValue == false) setAllScopes(newValue)
   }, []);
 
-
-// Render
+  function VariableItem({variableItem}:{variableItem: VariableItem}) {
+    console.log(variableItem)
+    console.log(variableItem.name)
+    return (
+      <div class={styles.variableItem}>
+        <p class= {styles.variableName}>{variableItem.name}</p>
+      </div>
+    )
+  }
+  
+  // Render
 
   return( 
     <div class={styles.mainContainer}>
-    <section class={styles.contentSection}>{props.greeting}</section>
-    <section class={styles.sideBar}>
-
-      <Text>{'Number scope'}</Text>
+      <section class={styles.contentSection}>
+        {/* {console.log(variableList)} */}
+        <section class={styles.variableList}>
+          {variableList.map((variable) => (
+            <VariableItem variableItem={variable}></VariableItem>
+          ))}
+        </section>
+      </section>
       
-      <VerticalSpace space='medium' />
+      <section class={styles.sideBar}>
 
-      <Checkbox onChange={handleAllScopesClick} value={allScopes}><Text>Show in all supported properties</Text></Checkbox>
-      
-      <VerticalSpace space='medium' />
+        <Text>{'Number scope'}</Text>
+        
+        <VerticalSpace space='medium' />
 
-      <Checkbox onChange={handleCornerRadiusClick} value={cornerRadius}>
-        <div class={styles.checkbox_label}>
-          {customIcon.cornerRadiusIcon}
-          <Text>Corner radius</Text>
-        </div>
-      </Checkbox>
-      
-      <VerticalSpace space='medium' />
+        <Checkbox onChange={handleAllScopesClick} value={allScopes}><Text>Show in all supported properties</Text></Checkbox>
+        
+        <VerticalSpace space='medium' />
 
-      <Checkbox onChange={handleWidthAndHeightClick} value={widthAndHeight}>
-        <div class={styles.checkbox_label}>
-          {customIcon.widthAndHeightIcon}
-          <Text>Width and height</Text>
-        </div>
-      </Checkbox>
-      
-      <VerticalSpace space='medium' />
+        <Checkbox onChange={handleCornerRadiusClick} value={cornerRadius}>
+          <div class={styles.checkbox_label}>
+            {customIcon.cornerRadiusIcon}
+            <Text>Corner radius</Text>
+          </div>
+        </Checkbox>
+        
+        <VerticalSpace space='medium' />
 
-      <Checkbox onChange={handleGapClick} value={gap}>
-        <div class={styles.checkbox_label}>
-          {customIcon.gapIcon}
-          <Text>Gap</Text>
-        </div>
-      </Checkbox>
-            
-      <VerticalSpace space='medium' />
+        <Checkbox onChange={handleWidthAndHeightClick} value={widthAndHeight}>
+          <div class={styles.checkbox_label}>
+            {customIcon.widthAndHeightIcon}
+            <Text>Width and height</Text>
+          </div>
+        </Checkbox>
+        
+        <VerticalSpace space='medium' />
 
-      <Checkbox onChange={handleTextContentClick} value={textContent}>
-        <div class={styles.checkbox_label}>
-          {customIcon.textContentIcon}
-          <Text>Text Content</Text>
-        </div>
-      </Checkbox>
-            
-      <VerticalSpace space='medium' />
+        <Checkbox onChange={handleGapClick} value={gap}>
+          <div class={styles.checkbox_label}>
+            {customIcon.gapIcon}
+            <Text>Gap</Text>
+          </div>
+        </Checkbox>
+              
+        <VerticalSpace space='medium' />
 
-      <Checkbox onChange={handleStrokeClick} value={stroke}>
-        <div class={styles.checkbox_label}>
-          {customIcon.strokeIcon}
-          <Text>Stroke</Text>
-        </div>
-      </Checkbox>
-            
-      <VerticalSpace space='medium' />
+        <Checkbox onChange={handleTextContentClick} value={textContent}>
+          <div class={styles.checkbox_label}>
+            {customIcon.textContentIcon}
+            <Text>Text Content</Text>
+          </div>
+        </Checkbox>
+              
+        <VerticalSpace space='medium' />
 
-      <Checkbox onChange={handleLayerOpacityClick} value={layerOpacity}>
-        <div class={styles.checkbox_label}>
-          {customIcon.layerOpacityIcon}
-          <Text>Layer opacity</Text>
-        </div>
-      </Checkbox>
-            
-      <VerticalSpace space='medium' />
+        <Checkbox onChange={handleStrokeClick} value={stroke}>
+          <div class={styles.checkbox_label}>
+            {customIcon.strokeIcon}
+            <Text>Stroke</Text>
+          </div>
+        </Checkbox>
+              
+        <VerticalSpace space='medium' />
 
-      <Checkbox onChange={handleEffectsClick} value={effects}>
-        <div class={styles.checkbox_label}>
-          {customIcon.effectsIcon}
-          <Text>Effects</Text>
-        </div>
-      </Checkbox>  
+        <Checkbox onChange={handleLayerOpacityClick} value={layerOpacity}>
+          <div class={styles.checkbox_label}>
+            {customIcon.layerOpacityIcon}
+            <Text>Layer opacity</Text>
+          </div>
+        </Checkbox>
+              
+        <VerticalSpace space='medium' />
 
-      <VerticalSpace space='medium' />
-      <Text>{'Typography'}</Text>
-      <VerticalSpace space='medium' />
+        <Checkbox onChange={handleEffectsClick} value={effects}>
+          <div class={styles.checkbox_label}>
+            {customIcon.effectsIcon}
+            <Text>Effects</Text>
+          </div>
+        </Checkbox>  
 
-      <Checkbox onChange={handleFontWeightClick} value={fontWeight}>
-        <div class={styles.checkbox_label}>
-          {customIcon.fontWeightIcon}
-          <Text>Font weight</Text>
-        </div>
-      </Checkbox>
-            
-      <VerticalSpace space='medium' />
+        <VerticalSpace space='medium' />
+        <Text>{'Typography'}</Text>
+        <VerticalSpace space='medium' />
 
-      <Checkbox onChange={handleFontSizeClick} value={fontSize}>
-        <div class={styles.checkbox_label}>
-          {customIcon.fontSizeIcon}
-          <Text>Font size</Text>
-        </div>
-      </Checkbox>
-            
-      <VerticalSpace space='medium' />
+        <Checkbox onChange={handleFontWeightClick} value={fontWeight}>
+          <div class={styles.checkbox_label}>
+            {customIcon.fontWeightIcon}
+            <Text>Font weight</Text>
+          </div>
+        </Checkbox>
+              
+        <VerticalSpace space='medium' />
 
-      <Checkbox onChange={handleLineHeightClick} value={lineHeight}>
-        <div class={styles.checkbox_label}>
-          {customIcon.lineHeightIcon}
-          <Text>Line height</Text>
-        </div>
-      </Checkbox>
-            
-      <VerticalSpace space='medium' />
+        <Checkbox onChange={handleFontSizeClick} value={fontSize}>
+          <div class={styles.checkbox_label}>
+            {customIcon.fontSizeIcon}
+            <Text>Font size</Text>
+          </div>
+        </Checkbox>
+              
+        <VerticalSpace space='medium' />
 
-      <Checkbox onChange={handleLetterSpacingClick} value={letterSpacing}>
-        <div class={styles.checkbox_label}>
-          {customIcon.letterSpacingIcon}
-          <Text>Letter spacing</Text>
-        </div>
-      </Checkbox>
-            
-      <VerticalSpace space='medium' />
+        <Checkbox onChange={handleLineHeightClick} value={lineHeight}>
+          <div class={styles.checkbox_label}>
+            {customIcon.lineHeightIcon}
+            <Text>Line height</Text>
+          </div>
+        </Checkbox>
+              
+        <VerticalSpace space='medium' />
 
-      <Checkbox onChange={handleParagraphSpacingClick} value={paragraphSpacing}>
-        <div class={styles.checkbox_label}>
-          {customIcon.paragraphSpacingIcon}
-          <Text>Paragraph Spacing</Text>
-        </div>
-      </Checkbox>
-            
-      <VerticalSpace space='medium' />
+        <Checkbox onChange={handleLetterSpacingClick} value={letterSpacing}>
+          <div class={styles.checkbox_label}>
+            {customIcon.letterSpacingIcon}
+            <Text>Letter spacing</Text>
+          </div>
+        </Checkbox>
+              
+        <VerticalSpace space='medium' />
 
-      <Checkbox onChange={handleParagraphIndendClick} value={paragraphIndent}>
-        <div class={styles.checkbox_label}>
-          {customIcon.paragraphIndentIcon}
-          <Text>ParagraphIndent</Text>
-        </div>
-      </Checkbox>
-    </section>
+        <Checkbox onChange={handleParagraphSpacingClick} value={paragraphSpacing}>
+          <div class={styles.checkbox_label}>
+            {customIcon.paragraphSpacingIcon}
+            <Text>Paragraph Spacing</Text>
+          </div>
+        </Checkbox>
+              
+        <VerticalSpace space='medium' />
+
+        <Checkbox onChange={handleParagraphIndendClick} value={paragraphIndent}>
+          <div class={styles.checkbox_label}>
+            {customIcon.paragraphIndentIcon}
+            <Text>ParagraphIndent</Text>
+          </div>
+        </Checkbox>
+      </section>
     </div>
   )
 }
