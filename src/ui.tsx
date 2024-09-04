@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { render, Container, Text, VerticalSpace, useWindowResize, Checkbox} from '@create-figma-plugin/ui'
-import { emit } from '@create-figma-plugin/utilities'
+import { render, Container, Text, VerticalSpace, useWindowResize, Checkbox, Textbox} from '@create-figma-plugin/ui'
+import { emit, on } from '@create-figma-plugin/utilities'
 import {h} from 'preact'
 
 import { ResizeWindowHandler, VariableItem} from './types'
@@ -9,7 +9,13 @@ import styles from './styles.css'
 import {customIcon} from './customIcons'
 
 
+let timer: ReturnType<typeof setTimeout>;
+const waitTime: number = 200;
 
+const search = function (searchString: string) {
+  console.log(searchString);
+  emit('getFilteredList', searchString)
+}
 
 
 function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
@@ -29,8 +35,15 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
   })
 
   // State Vars
-
   const [variableList, setVariableList] = useState<VariableItem[]>(props.variableList)
+
+  on('showFilteredList', function(variableList: VariableItem[]){
+    console.log('Plugin showFiltered List')
+    console.log(variableList)
+    setVariableList(variableList)
+  })
+
+  const [searchBoxValue, setSearchBoxValue] = useState<string>('');
 
   const [allScopes, setAllScopes] = useState<boolean>(true)
   const [cornerRadius, setCornerRadius] = useState<boolean>(true)
@@ -49,8 +62,21 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
   
 
   // Event Handlers 
+  
 
 
+  function handleTextBoxInput (event: any) {
+    const newValue = event.currentTarget.value as string;
+    setSearchBoxValue(newValue);
+
+    clearTimeout(timer)
+
+    timer = setTimeout(() => {
+      search(newValue)
+    }, waitTime)
+  }
+
+  // checbox handlers
   const handleAllScopesClick = useCallback(function (event: any){
     console.log(' all')
     const newValue = event.currentTarget.checked as boolean
@@ -150,7 +176,7 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
 
   function VariableItem({variableItem}:{variableItem: VariableItem}) {
     console.log(variableItem)
-    console.log(variableItem.name)
+    // console.log(variableItem.name)
     return (
       <div class={styles.variableItem}>
         <p class= {styles.variableName}>{variableItem.name}</p>
@@ -163,7 +189,8 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
   return( 
     <div class={styles.mainContainer}>
       <section class={styles.contentSection}>
-        {/* {console.log(variableList)} */}
+        <Textbox value={searchBoxValue} onInput={handleTextBoxInput}></Textbox>
+        
         <section class={styles.variableList}>
           {variableList.map((variable) => (
             <VariableItem variableItem={variable}></VariableItem>
