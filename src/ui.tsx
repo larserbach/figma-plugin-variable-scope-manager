@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { render, Container, Text, VerticalSpace, useWindowResize, Checkbox, Textbox, Button} from '@create-figma-plugin/ui'
+import { render, SegmentedControl, Text, useWindowResize, Checkbox, Textbox, Button} from '@create-figma-plugin/ui'
 import { emit, on, once } from '@create-figma-plugin/utilities'
 import {h} from 'preact'
 
@@ -41,6 +41,7 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
   const [variableList, setVariableList] = useState<VariableItem[]>(props.variableList)
   const [searchBoxValue, setSearchBoxValue] = useState<string>('')
   const [variableTypeFilter, setVariableTypeFilter] = useState<VariableResolvedDataType>('COLOR')
+  const [typeControl, setTypeControl] = useState<string>('Color')
   // scope checkboxes Float
   const [allFloats, setAllFloats] = useState<boolean>(true)
   const [cornerRadius, setCornerRadius] = useState<boolean>(true)
@@ -408,6 +409,19 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
   // UI
   // # # # # # # # # # # # # 
 
+  const typeControlOptions = [{
+    value: 'Float'
+  }, {
+    value:'Color'
+  }]
+
+  function handleTypeControlChange(event: any) {
+    const newValue = event.currentTarget.value as string;
+    setTypeControl(newValue)
+    setVariableTypeFilter(newValue.toUpperCase() as VariableResolvedDataType)
+    emit('getFilteredList', newValue.toUpperCase(), searchBoxValue)
+  }
+
   return( 
     <div class={styles.mainContainer}>
 
@@ -415,6 +429,7 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
         <div class={styles.searchBoxWrapper}>
           {customIcon.searchIcon}
           <Textbox value={searchBoxValue} onInput={handleTextBoxInput} placeholder='Find variables…'></Textbox>
+          <SegmentedControl onChange={handleTypeControlChange} options={typeControlOptions} value={typeControl} />
         </div>
         <section class={styles.variableList}>
           {variableList.map((variable) => (
@@ -425,8 +440,12 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
           <Button onClick={handleSubmit}>Apply Scopes</Button>
         </div>
       </section>
+      {variableTypeFilter === 'FLOAT' ? (
+        <FloatSideBar />
+        ) : variableTypeFilter === 'COLOR' ? (
+        <ColorSideBar />
+      ) : null}
       
-      <ColorSideBar />
     </div>
   )
 }
