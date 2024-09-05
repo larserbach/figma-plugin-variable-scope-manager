@@ -34,17 +34,16 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     resizeBehaviorOnDoubleClick: 'minimize'
   })
 
+  // # # # # # # # # # # # #  
   // State Vars
+  // # # # # # # # # # # # # 
+
   const [variableList, setVariableList] = useState<VariableItem[]>(props.variableList)
+  const [searchBoxValue, setSearchBoxValue] = useState<string>('')
+  const [variableTypeFilter, setVariableTypeFilter] = useState<VariableResolvedDataType>('FLOAT')
+  
 
-  on('showFilteredList', function(variableList: VariableItem[]){
-    console.log('Plugin showFiltered List')
-    console.log(variableList)
-    setVariableList(variableList)
-  })
-
-  const [searchBoxValue, setSearchBoxValue] = useState<string>('');
-
+  // scope checkboxes
   const [allScopes, setAllScopes] = useState<boolean>(true)
   const [cornerRadius, setCornerRadius] = useState<boolean>(true)
   const [gap, setGap] = useState<boolean>(true)
@@ -61,8 +60,44 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
   const [paragraphIndent, setParagraphIndend] = useState<boolean>(true)
   
 
-  // Event Handlers 
+  const variablesScopes = (function():VariableScope[]{
+    // returns ALL_SCOPES if true  
+    if(allScopes == true) return ['ALL_SCOPES']
+    
+    // if 
+    const someScopes: VariableScope[] = []
+
+    if (cornerRadius) someScopes.push('CORNER_RADIUS');
+    if (gap) someScopes.push('GAP');
+    if (widthAndHeight) someScopes.push('WIDTH_HEIGHT');
+    if (textContent) someScopes.push('TEXT_CONTENT');
+    if (stroke) someScopes.push('STROKE_FLOAT');
+    if (layerOpacity) someScopes.push('OPACITY');
+    if (effects) someScopes.push('EFFECT_FLOAT');
+    if (fontWeight) someScopes.push('FONT_WEIGHT');
+    if (fontSize) someScopes.push('FONT_SIZE');
+    if (lineHeight) someScopes.push('LINE_HEIGHT');
+    if (letterSpacing) someScopes.push('LETTER_SPACING');
+    if (paragraphSpacing) someScopes.push('PARAGRAPH_SPACING');
+    if (paragraphIndent) someScopes.push('PARAGRAPH_INDENT');
+
+
+    return someScopes
+  })();
+
+  // # # # # # # # # # # # # 
+  // Events from MAIN
+  // # # # # # # # # # # # # 
   
+  on('showFilteredList', function(variableList: VariableItem[]){
+    console.log('Plugin showFiltered List')
+    console.log(variableList)
+    setVariableList(variableList)
+  })
+  
+  // # # # # # # # # # # # # 
+  // UI Event Handlers
+  // # # # # # # # # # # # # 
 
 
   function handleTextBoxInput (event: any) {
@@ -78,6 +113,8 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
 
   function handleSubmit (event: any) {
     console.log('submit')
+    // console.log(variablesScopes)
+    emit('applyScopes', searchBoxValue, variableTypeFilter, variablesScopes)
   }
 
   // checbox handlers
@@ -132,7 +169,7 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
 
   const handleLayerOpacityClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
-    setCornerRadius(newValue)
+    setLayerOpacity(newValue)
     if (newValue == false) setAllScopes(newValue)
   }, []);
 
@@ -178,6 +215,12 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     if (newValue == false) setAllScopes(newValue)
   }, []);
 
+
+  // # # # # # # # # # # # # 
+  // Components
+  // # # # # # # # # # # # # 
+
+
   function VariableItem({variableItem}:{variableItem: VariableItem}) {
     console.log(variableItem)
     // console.log(variableItem.name)
@@ -188,7 +231,9 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     )
   }
   
-  // Render
+  // # # # # # # # # # # # # 
+  // UI
+  // # # # # # # # # # # # # 
 
   return( 
     <div class={styles.mainContainer}>

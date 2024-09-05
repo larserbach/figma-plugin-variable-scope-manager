@@ -17,6 +17,12 @@ export default async function () {
     emit('showFilteredList', filteredList)
   })
 
+  on('applyScopes', async function (searchString: string, resolvedType: VariableResolvedDataType, scopes: VariableScope[]) {
+    await changeScope(searchString, resolvedType, scopes)
+    const filteredList = await getListForUI(searchString)
+    emit('showFilteredList', filteredList)
+  })
+
   const options = {
     height: 400,
     width: 600
@@ -35,11 +41,11 @@ export default async function () {
 
 
   // This allready works 
-  async function changeScope(resolvedType: VariableResolvedDataType, filterString: string) {
+  async function changeScope(searchString: string, resolvedType: VariableResolvedDataType, scopes: VariableScope[] ) {
     const localVariables = await figma.variables.getLocalVariablesAsync();
     localVariables.forEach(variable => {
-      if (variable.resolvedType == resolvedType && variable.name.includes(filterString)){
-      variable.scopes = ["CORNER_RADIUS"]}
+      if (variable.resolvedType == resolvedType && variable.name.includes(searchString)){
+      variable.scopes = scopes}
     }); 
   }
   
