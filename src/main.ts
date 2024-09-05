@@ -4,6 +4,12 @@ import { ResizeWindowHandler, VariableItem } from './types'
 
 export default async function () {
   console.log("- - - - main ts - - - - -")
+
+  const testVars = await figma.variables.getLocalVariablesAsync('STRING');
+  testVars.forEach(variable => {
+    console.log(`${variable.name} -> ${variable.scopes}`)
+  })
+
   on<ResizeWindowHandler>(
     'RESIZE_WINDOW',
     function (windowSize: { width: number; height: number }) {

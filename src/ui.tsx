@@ -65,8 +65,12 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
   const [textFill, setTextFill] = useState<boolean>(true)
   const [strokeColor, setStrokeColor] = useState<boolean>(true)
   const [effectColor, setEffectColor] = useState<boolean>(true)
-
-
+  // scope checkboxes String
+  const [allStrings, setAllStrings] = useState<boolean>(true)
+  const [textContentString, setTextConentString] = useState<boolean>(true)
+  const [fontFamilyString, setFontFamilyString] = useState<boolean>(true)
+  const [fontWeightOrStyleString, setFontWeightOrStyleString] = useState<boolean>(true)
+  
 
   const FloatScopes = (function():VariableScope[]{
     
@@ -107,6 +111,20 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     return someScopes
   })();
 
+  const StringScopes = (function():VariableScope[]{
+    
+    if(allStrings == true) return ['ALL_SCOPES']
+    
+    const someScopes: VariableScope[] = []
+
+    if (textContentString) someScopes.push('TEXT_CONTENT');
+    if (fontFamilyString) someScopes.push('FONT_FAMILY');
+    if (fontWeightOrStyleString) someScopes.push('FONT_STYLE');
+    
+    return someScopes
+  })();
+
+
   // # # # # # # # # # # # # 
   // Events from MAIN
   // # # # # # # # # # # # # 
@@ -138,6 +156,7 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     console.log(FloatScopes)
     emit('applyScopes', searchBoxValue, variableTypeFilter, (() => {
       if(variableTypeFilter == 'FLOAT') {return FloatScopes}
+      else if (variableTypeFilter == 'STRING') {return  StringScopes}
       else if (variableTypeFilter == 'COLOR') {return  ColorScopes}
     })())
   }
@@ -280,6 +299,32 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     if (newValue == false) setAllColors(newValue)
   }, []);
 
+  // string checkbox handlers
+  const handleAllStringsClick = useCallback(function (event: any){
+    const newValue = event.currentTarget.checked as boolean
+    setAllStrings(newValue)
+    setTextConentString(newValue)
+    setFontFamilyString(newValue)
+    setFontWeightOrStyleString(newValue)
+  }, []);
+
+  const handleTextContentStringClick = useCallback(function (event: any){
+    const newValue = event.currentTarget.checked as boolean
+    setTextConentString(newValue)
+    if (newValue == false) setAllStrings(newValue)
+  }, []);
+
+  const handleFontFamilyStringClick = useCallback(function (event: any){
+    const newValue = event.currentTarget.checked as boolean
+    setFontFamilyString(newValue)
+    if (newValue == false) setAllStrings(newValue)
+  }, []);
+
+  const handleFontWeightOrStyleStringClick = useCallback(function (event: any){
+    const newValue = event.currentTarget.checked as boolean
+    setFontWeightOrStyleString(newValue)
+    if (newValue == false) setAllStrings(newValue)
+  }, []);
 
   // # # # # # # # # # # # # 
   // Components
@@ -289,9 +334,42 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
   function VariableItem({variableItem}:{variableItem: VariableItem}) {
     // console.log(variableItem)
     // console.log(variableItem.name)
+
+    const scopeDictionary: {[key in VariableScope]?: string} = {
+      'ALL_FILLS': 'All fills',
+      'ALL_SCOPES': 'All scopes',
+      'CORNER_RADIUS': 'Corner radius',
+      'EFFECT_COLOR': 'Effect',
+      'EFFECT_FLOAT': 'Effect',
+      'FONT_FAMILY': 'Font family',
+      'FONT_SIZE': 'Font size',
+      'FONT_STYLE': 'Font weight or style',
+      'FONT_WEIGHT': 'Font weight',
+      'FRAME_FILL': 'Frame Fill',
+      'GAP': 'Gap',
+      'LETTER_SPACING': 'Letter spacing',
+      'LINE_HEIGHT': 'Line height',
+      'OPACITY': 'Layer Opacity',
+      'PARAGRAPH_INDENT': 'Paragraph Indent',
+      'PARAGRAPH_SPACING': 'Paragraph Spacing',
+      'SHAPE_FILL': 'Shape Fill',
+      'STROKE_FLOAT': 'Stroke',
+      'STROKE_COLOR' : 'Stroke',
+      'TEXT_CONTENT': 'Text content',
+      'TEXT_FILL': 'Text fill',
+      'WIDTH_HEIGHT' : 'Widht and height',
+    }
+
+    const humanReadableScope = variableItem.scopes.map((scope: VariableScope) => {
+      return scopeDictionary[scope]
+    })
+
+    const j = humanReadableScope.length ? humanReadableScope.join(', ') : 'No scope'
+
     return (
       <div class={styles.variableItem}>
-        <p class= {styles.variableName}>{variableItem.name}</p>
+        <p class={styles.variableName}>{variableItem.name}</p>
+        <p class={styles.variableScope}>{j}</p>
       </div>
     )
   }
@@ -404,6 +482,34 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
       </section>
     )
   }
+
+  function StringSideBar() {
+    return (
+      <section class={styles.sideBar}>
+
+        <Text>{'String scope'}</Text>
+        <Checkbox onChange={handleAllStringsClick} value={allStrings}><Text>Show in all supported properties</Text></Checkbox>
+        <Checkbox onChange={handleTextContentStringClick} value={textContentString}>
+          <div class={styles.checkbox_label}>
+            {customIcon.textContentIcon}
+            <Text>Text Content</Text>
+          </div>
+        </Checkbox>
+        <Checkbox onChange={handleFontFamilyStringClick} value={fontFamilyString}>
+          <div class={styles.checkbox_label}>
+            {customIcon.fontSizeIcon}
+            <Text>Font family</Text>
+          </div>
+          </Checkbox>
+        <Checkbox onChange={handleFontWeightOrStyleStringClick} value={fontWeightOrStyleString}>
+          <div class={styles.checkbox_label}>
+            {customIcon.fontWeightIcon}
+            <Text>Font weight or style</Text>
+          </div>
+        </Checkbox>  
+      </section>
+    )
+  }
   
   // # # # # # # # # # # # # 
   // UI
@@ -413,6 +519,9 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     value: 'Float'
   }, {
     value:'Color'
+  },
+  {
+    value: 'String'
   }]
 
   function handleTypeControlChange(event: any) {
@@ -444,7 +553,9 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
         <FloatSideBar />
         ) : variableTypeFilter === 'COLOR' ? (
         <ColorSideBar />
-      ) : null}
+        ) : variableTypeFilter === 'STRING' ? (
+          <StringSideBar />
+        ) : null}
       
     </div>
   )
