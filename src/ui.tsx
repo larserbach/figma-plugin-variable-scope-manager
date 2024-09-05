@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, Container, Text, VerticalSpace, useWindowResize, Checkbox, Textbox, Button} from '@create-figma-plugin/ui'
-import { emit, on } from '@create-figma-plugin/utilities'
+import { emit, on, once } from '@create-figma-plugin/utilities'
 import {h} from 'preact'
 
 import { ResizeWindowHandler, VariableItem} from './types'
@@ -12,9 +12,9 @@ import {customIcon} from './customIcons'
 let timer: ReturnType<typeof setTimeout>;
 const waitTime: number = 200;
 
-const search = function (searchString: string) {
-  console.log(searchString);
-  emit('getFilteredList', searchString)
+const search = function (resolvedType: VariableResolvedDataType, searchString: string) {
+  console.log('Plugin - search:' + searchString);
+  emit('getFilteredList', resolvedType, searchString)
 }
 
 
@@ -40,11 +40,9 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
 
   const [variableList, setVariableList] = useState<VariableItem[]>(props.variableList)
   const [searchBoxValue, setSearchBoxValue] = useState<string>('')
-  const [variableTypeFilter, setVariableTypeFilter] = useState<VariableResolvedDataType>('FLOAT')
-  
-
-  // scope checkboxes
-  const [allScopes, setAllScopes] = useState<boolean>(true)
+  const [variableTypeFilter, setVariableTypeFilter] = useState<VariableResolvedDataType>('COLOR')
+  // scope checkboxes Float
+  const [allFloats, setAllFloats] = useState<boolean>(true)
   const [cornerRadius, setCornerRadius] = useState<boolean>(true)
   const [gap, setGap] = useState<boolean>(true)
   const [widthAndHeight, setWidthAndHeight] = useState<boolean>(true)
@@ -58,13 +56,21 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
   const [letterSpacing, setLetterSpacing] = useState<boolean>(true)
   const [paragraphSpacing, setParagraphSpacing] = useState<boolean>(true)
   const [paragraphIndent, setParagraphIndend] = useState<boolean>(true)
-  
+  // scope checkboxes Color
+  const [allColors, setAllColors] = useState<boolean>(true)
+  const [allFills, setAllFills] = useState<boolean>(true)
+  const [frameFill, setFrameFill] = useState<boolean>(true)
+  const [shapeFill, setShapeFill] = useState<boolean>(true)
+  const [textFill, setTextFill] = useState<boolean>(true)
+  const [strokeColor, setStrokeColor] = useState<boolean>(true)
+  const [effectColor, setEffectColor] = useState<boolean>(true)
 
-  const variablesScopes = (function():VariableScope[]{
-    // returns ALL_SCOPES if true  
-    if(allScopes == true) return ['ALL_SCOPES']
+
+
+  const FloatScopes = (function():VariableScope[]{
     
-    // if 
+    if(allFloats == true) return ['ALL_SCOPES']
+    
     const someScopes: VariableScope[] = []
 
     if (cornerRadius) someScopes.push('CORNER_RADIUS');
@@ -85,13 +91,28 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     return someScopes
   })();
 
+  const ColorScopes = (function():VariableScope[]{
+    
+    if(allColors == true) return ['ALL_SCOPES']
+    
+    const someScopes: VariableScope[] = []
+
+    if (allFills) someScopes.push('ALL_FILLS');
+    if (frameFill && !allFills) someScopes.push('FRAME_FILL');
+    if (shapeFill && !allFills) someScopes.push('SHAPE_FILL');
+    if (textFill && !allFills) someScopes.push('TEXT_FILL');
+    if (strokeColor) someScopes.push('STROKE_COLOR');
+    if (effectColor) someScopes.push('EFFECT_COLOR');
+    return someScopes
+  })();
+
   // # # # # # # # # # # # # 
   // Events from MAIN
   // # # # # # # # # # # # # 
   
-  on('showFilteredList', function(variableList: VariableItem[]){
-    console.log('Plugin showFiltered List')
-    console.log(variableList)
+  once('showFilteredList', function(variableList: VariableItem[]){
+    console.log('Plugin: on(showFilteredList)')
+    // console.log(variableList)
     setVariableList(variableList)
   })
   
@@ -107,21 +128,24 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     clearTimeout(timer)
 
     timer = setTimeout(() => {
-      search(newValue)
+      search(variableTypeFilter, newValue)
     }, waitTime)
   }
 
   function handleSubmit (event: any) {
-    console.log('submit')
-    // console.log(variablesScopes)
-    emit('applyScopes', searchBoxValue, variableTypeFilter, variablesScopes)
+    console.log('Plugin: handleSubmit')
+    console.log(FloatScopes)
+    emit('applyScopes', searchBoxValue, variableTypeFilter, (() => {
+      if(variableTypeFilter == 'FLOAT') {return FloatScopes}
+      else if (variableTypeFilter == 'COLOR') {return  ColorScopes}
+    })())
   }
 
-  // checbox handlers
+  // float checbox handlers
   const handleAllScopesClick = useCallback(function (event: any){
     console.log(' all')
     const newValue = event.currentTarget.checked as boolean
-    setAllScopes(newValue)
+    setAllFloats(newValue)
     setCornerRadius(newValue)
     setGap(newValue)
     setWidthAndHeight(newValue)
@@ -136,83 +160,123 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     setParagraphSpacing(newValue)
     setParagraphIndend(newValue)
   }, []);
-
   const handleCornerRadiusClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setCornerRadius(newValue)
-    if (newValue == false) setAllScopes(newValue)
+    if (newValue == false) setAllFloats(newValue)
   }, []);
-
   const handleWidthAndHeightClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setWidthAndHeight(newValue)
-    if (newValue == false) setAllScopes(newValue)
+    if (newValue == false) setAllFloats(newValue)
   }, []);
-
   const handleGapClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setGap(newValue)
-    if (newValue == false) setAllScopes(newValue)
+    if (newValue == false) setAllFloats(newValue)
   }, []);
-
   const handleTextContentClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setTextContent(newValue)
-    if (newValue == false) setAllScopes(newValue)
+    if (newValue == false) setAllFloats(newValue)
   }, []);
-
   const handleStrokeClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setStroke(newValue)
-    if (newValue == false) setAllScopes(newValue)
+    if (newValue == false) setAllFloats(newValue)
   }, []);
-
   const handleLayerOpacityClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setLayerOpacity(newValue)
-    if (newValue == false) setAllScopes(newValue)
+    if (newValue == false) setAllFloats(newValue)
   }, []);
-
   const handleEffectsClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setEffects(newValue)
-    if (newValue == false) setAllScopes(newValue)
+    if (newValue == false) setAllFloats(newValue)
   }, []);
-
   const handleFontWeightClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setFontWeight(newValue)
-    if (newValue == false) setAllScopes(newValue)
+    if (newValue == false) setAllFloats(newValue)
   }, []);
-
   const handleFontSizeClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setFontSize(newValue)
-    if (newValue == false) setAllScopes(newValue)
+    if (newValue == false) setAllFloats(newValue)
   }, []);
-
   const handleLineHeightClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setLineHeight(newValue)
-    if (newValue == false) setAllScopes(newValue)
+    if (newValue == false) setAllFloats(newValue)
   }, []);
-
   const handleLetterSpacingClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setLetterSpacing(newValue)
-    if (newValue == false) setAllScopes(newValue)
+    if (newValue == false) setAllFloats(newValue)
   }, []);
-
   const handleParagraphSpacingClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setParagraphSpacing(newValue)
-    if (newValue == false) setAllScopes(newValue)
+    if (newValue == false) setAllFloats(newValue)
   }, []);
-
   const handleParagraphIndendClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setParagraphIndend(newValue)
-    if (newValue == false) setAllScopes(newValue)
+    if (newValue == false) setAllFloats(newValue)
+  }, []);
+  // color checkbox handlers
+  const handleAllColorsClick = useCallback(function (event: any){
+    const newValue = event.currentTarget.checked as boolean
+    setAllColors(newValue)
+    setAllFills(newValue)
+    setFrameFill(newValue)
+    setShapeFill(newValue)
+    setTextFill(newValue)
+    setStrokeColor(newValue)
+    setEffectColor(newValue)
+  }, []);
+
+  const handleAllFillsClick = useCallback(function (event: any){
+    const newValue = event.currentTarget.checked as boolean
+    setAllFills(newValue)
+    setFrameFill(newValue)
+    setShapeFill(newValue)
+    setTextFill(newValue)
+    if (newValue == false) setAllColors(newValue)
+  }, []);
+
+  const handleFrameFillClick = useCallback(function (event: any){
+    const newValue = event.currentTarget.checked as boolean
+    setFrameFill(newValue)
+    if (newValue == false) setAllFills(newValue)
+    if (newValue == false) setAllColors(newValue)
+  }, []);
+
+  const handleShapeFillClick = useCallback(function (event: any){
+    const newValue = event.currentTarget.checked as boolean
+    setShapeFill(newValue)
+    if (newValue == false) setAllFills(newValue)
+    if (newValue == false) setAllColors(newValue)
+  }, []);
+
+  const handleTextFillClick = useCallback(function (event: any){
+    const newValue = event.currentTarget.checked as boolean
+    setTextFill(newValue)
+    if (newValue == false) setAllFills(newValue)
+    if (newValue == false) setAllColors(newValue)
+  }, []);
+
+  const handleStrokeColorClick = useCallback(function (event: any){
+    const newValue = event.currentTarget.checked as boolean
+    setStrokeColor(newValue)
+    if (newValue == false) setAllColors(newValue)
+  }, []);
+
+  const handleEffectColorClick = useCallback(function (event: any){
+    const newValue = event.currentTarget.checked as boolean
+    setEffectColor(newValue)
+    if (newValue == false) setAllColors(newValue)
   }, []);
 
 
@@ -222,7 +286,7 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
 
 
   function VariableItem({variableItem}:{variableItem: VariableItem}) {
-    console.log(variableItem)
+    // console.log(variableItem)
     // console.log(variableItem.name)
     return (
       <div class={styles.variableItem}>
@@ -230,33 +294,13 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
       </div>
     )
   }
-  
-  // # # # # # # # # # # # # 
-  // UI
-  // # # # # # # # # # # # # 
 
-  return( 
-    <div class={styles.mainContainer}>
-
-      <section class={styles.contentSection}>
-        <div class={styles.searchBoxWrapper}>
-          {customIcon.searchIcon}
-          <Textbox value={searchBoxValue} onInput={handleTextBoxInput} placeholder='Find variables…'></Textbox>
-        </div>
-        <section class={styles.variableList}>
-          {variableList.map((variable) => (
-            <VariableItem variableItem={variable}></VariableItem>
-          ))}
-        </section>
-        <div class={styles.submitWrapper}>
-          <Button onClick={handleSubmit}>Apply Scopes</Button>
-        </div>
-      </section>
-      
+  function FloatSideBar() {
+    return (
       <section class={styles.sideBar}>
 
         <Text>{'Number scope'}</Text>
-        <Checkbox onChange={handleAllScopesClick} value={allScopes}><Text>Show in all supported properties</Text></Checkbox>
+        <Checkbox onChange={handleAllScopesClick} value={allFloats}><Text>Show in all supported properties</Text></Checkbox>
         <Checkbox onChange={handleCornerRadiusClick} value={cornerRadius}>
           <div class={styles.checkbox_label}>
             {customIcon.cornerRadiusIcon}
@@ -339,6 +383,50 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
           </div>
         </Checkbox>
       </section>
+    )
+  }
+
+  function ColorSideBar() {
+    return (
+      <section class={styles.sideBar}>
+
+        <Text>{'Color scope'}</Text>
+        <Checkbox onChange={handleAllColorsClick} value={allColors}><Text>Show in all supported properties</Text></Checkbox>
+        <Checkbox onChange={handleAllFillsClick} value={allFills}><Text>Fill</Text></Checkbox>
+        <div class={styles.checkboxIndent}>
+          <Checkbox onChange={handleFrameFillClick} value={frameFill}><Text>Frame</Text></Checkbox>
+          <Checkbox onChange={handleShapeFillClick} value={shapeFill}><Text>Shape</Text></Checkbox>
+          <Checkbox onChange={handleTextFillClick} value={textFill}><Text>Text</Text></Checkbox>
+        </div>
+        <Checkbox onChange={handleStrokeColorClick} value={strokeColor}><Text>Stroke</Text></Checkbox>
+        <Checkbox onChange={handleEffectColorClick} value={effectColor}><Text>Effects</Text></Checkbox>  
+      </section>
+    )
+  }
+  
+  // # # # # # # # # # # # # 
+  // UI
+  // # # # # # # # # # # # # 
+
+  return( 
+    <div class={styles.mainContainer}>
+
+      <section class={styles.contentSection}>
+        <div class={styles.searchBoxWrapper}>
+          {customIcon.searchIcon}
+          <Textbox value={searchBoxValue} onInput={handleTextBoxInput} placeholder='Find variables…'></Textbox>
+        </div>
+        <section class={styles.variableList}>
+          {variableList.map((variable) => (
+            <VariableItem variableItem={variable}></VariableItem>
+          ))}
+        </section>
+        <div class={styles.submitWrapper}>
+          <Button onClick={handleSubmit}>Apply Scopes</Button>
+        </div>
+      </section>
+      
+      <ColorSideBar />
     </div>
   )
 }
