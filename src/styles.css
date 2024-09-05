@@ -1,3 +1,61 @@
+
+.mainContainer {
+  display: flex;
+  height: 100%;
+}
+
+.sideBar {
+  flex: 0 0 260px;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  overflow-y: auto;
+  gap: 16px;
+}
+
+.contentSection {
+  flex: 1 0 0;
+  display: flex;
+  flex-direction: column;
+  background-color: rgb(102, 176, 38);
+
+}
+
+.variableList {
+  display: flex;
+  flex: 1 0 0;
+  flex-direction: column;
+  align-items: start;
+  padding: 16px 16px 44px 16px;
+  /* align-self: stretch; */
+  overflow-y: auto;
+  background-color: var(--figma-color-bg);
+}
+
+div.submitWrapper {
+  position:absolute;
+  right: 280px;
+  bottom: 16px;
+}
+
+.variableItem {
+  display: flex;
+  padding: 16px;
+  border-radius: 4px;
+  flex-direction: column;
+  align-items: start;
+  gap: 12px;
+  align-self: stretch;
+}
+
+p.variableName {
+  padding: 0;
+  margin: 0;
+  align-self: stretch;
+  font-weight: bold;
+  color: var(--figma-color-text);
+}
+
 .checkbox_label {
   display: flex;
   padding: 0;
@@ -13,58 +71,26 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  fill: var(--figma-color-icon-secondary)
 }
 
-.mainContainer {
+.searchIcon {
+  width: 24px;
+  height: 24px;
   display: flex;
-  gap: 0;
-  width:100%;
-  height:100%;
+  align-items: center;
+  justify-content: center;
 }
 
-.contentSection {
-  flex: 1 0 0;
-  align-self: stretch;
-  background-color: black;
-}
-
-.sideBar {
-  width: 240px;
-  flex-shrink: 0;
-  align-self: stretch;
-  padding: 16px; 
-}
-
-.variableList {
+.searchBoxWrapper {
+  background-color: var(--figma-color-bg-secondary);
   display: flex;
-  padding: 16px;
-  flex-direction: column;
-  align-items: start;
-  flex: 1 0 0;
-  align-self: stretch;
-  overflow-y: auto;
-  background-color: aqua;
+  flex-direction: row;
+  align-items: center;
+  gap:4px;
+  padding: 4px 16px;
 }
 
-.variableItem {
-  display: flex;
-  padding: 16px;
-  border-radius: 4px;
-  flex-direction: column;
-  align-items: start;
-  gap: 12px;
-  align-self: stretch;
-  background-color: red;
-}
 
-p.variableName {
-  padding: 0;
-  margin: 0;
-  align-self: stretch;
-  font-weight: bold;
-  color: black;
-}
 
 /* section > div > input {
   display: block;
