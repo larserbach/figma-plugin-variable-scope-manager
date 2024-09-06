@@ -1,4 +1,31 @@
-# Preact Resizable
+## 👋 What's this nifty plugin all about?
+This plugin is your new best friend for managing variable scopes in Figma. It's designed to help you quickly filter, search, and modify the scopes of your local variables without breaking a sweat.
+
+## What can you do with it?
+1. Filter variables by type: Whether you're looking for NUMBER, COLOR, STRING this plugin's got you covered.
+2. Search like a pro: Need to find a specific variable? Just start typing, and the plugin will show you matching results in real-time.
+3. Bulk scope changes: Want to change the scopes for multiple variables at once? No problem! Select the variables you want to modify, choose the new scopes, and voila!
+4. Quick overview: Get a bird's-eye view of all your variables, their types, and current scopes in one convenient list.
+
+## How to use it?
+1. Fire up the plugin
+2. Choose the variable type you want to work with
+3. Use the search box to filter the variables you want to edit
+4. Apply new scopes. 
+
+It's that simple! This plugin is perfect for keeping your variables organized and your workflow smooth. So go ahead, give it a spin, and take control of your Figma variables like never before! 🚀
+
+### Don't miss out on these other pro tools
+
+*[Variables everywhere](https://www.figma.com/community/plugin/1404403514737707928/variables-everywhere)*
+Quickly scan your selection for variables you actually forgot to apply (It's free)
+
+*[Brutal](https://www.figma.com/community/plugin/1215386279132052346/brutal)*
+A super light-weight plugin to remove, detach styles, variables etc (It's free)
+
+
+
+
 
 ## Development guide
 
