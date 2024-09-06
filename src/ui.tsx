@@ -1,47 +1,59 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, SegmentedControl, Text, useWindowResize, Checkbox, Textbox, Button} from '@create-figma-plugin/ui'
-import { emit, on, once } from '@create-figma-plugin/utilities'
+import { emit, once } from '@create-figma-plugin/utilities'
 import {h} from 'preact'
 
-import { ResizeWindowHandler, VariableItem} from './types'
+import { ResizeWindowHandler, VariableItem, SegmentedControlKey} from './types'
 import { useCallback, useState } from 'preact/hooks';
 import styles from './styles.css'
 import {customIcon} from './customIcons'
+import { scopeDictionary } from './scopeDictionary';
 
 
 let timer: ReturnType<typeof setTimeout>;
 const waitTime: number = 200;
-
-const search = function (resolvedType: VariableResolvedDataType, searchString: string) {
-  console.log('Plugin - search:' + searchString);
-  emit('getFilteredList', resolvedType, searchString)
+const scopeTypeDictionary: {[key in SegmentedControlKey]: VariableResolvedDataType} = {
+  'Numbers': 'FLOAT',
+  'Colors': 'COLOR',
+  'Strings': 'STRING' 
 }
+const typeControlOptions: {value: SegmentedControlKey}[] = [
+  {value: 'Numbers'}, 
+  {value: 'Colors'},
+  {value: 'Strings'}
+]
 
 
-function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
+function Plugin(props: { initialType: VariableResolvedDataType, variableList: VariableItem[]}) {
 
-  console.log('PLUGIN')
-  // console.log(props.variableList)
+  // console.log('PLUGIN')
   
+  // # # # # # # # # # # # # # # # # # # # #
+  // #region Window Resizing
+  // # # # # # # # # # # # # # # # # # # # #
+
   function onWindowResize(windowSize: { width: number; height: number }) {
     emit<ResizeWindowHandler>('RESIZE_WINDOW', windowSize)
   }
   useWindowResize(onWindowResize, {
-    maxHeight: 8000,
-    maxWidth: 8000,
-    minHeight: 400,
-    minWidth: 600,
+    maxHeight: 12000,
+    maxWidth: 1200,
+    minHeight: 320,
+    minWidth: 480,
     resizeBehaviorOnDoubleClick: 'minimize'
   })
 
-  // # # # # # # # # # # # #  
-  // State Vars
-  // # # # # # # # # # # # # 
+  // #endregion
+  // # # # # # # # # # # # # # # # # # # # # 
+  // #region State Var
+  // # # # # # # # # # # # # # # # # # # # #
 
   const [variableList, setVariableList] = useState<VariableItem[]>(props.variableList)
   const [searchBoxValue, setSearchBoxValue] = useState<string>('')
-  const [variableTypeFilter, setVariableTypeFilter] = useState<VariableResolvedDataType>('COLOR')
-  const [typeControl, setTypeControl] = useState<string>('Color')
+  const [variableTypeFilter, setVariableTypeFilter] = useState<VariableResolvedDataType>(props.initialType)
+  const [displayBlanket, setDisplayBlanket] = useState<boolean>(false) 
+  const [typeControl, setTypeControl] = useState<string>('Numbers')
+  const [amountOfListedVariables, setAmountOfListedVariables] = useState<number>(variableList.length)
   // scope checkboxes Float
   const [allFloats, setAllFloats] = useState<boolean>(true)
   const [cornerRadius, setCornerRadius] = useState<boolean>(true)
@@ -71,6 +83,17 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
   const [fontFamilyString, setFontFamilyString] = useState<boolean>(true)
   const [fontWeightOrStyleString, setFontWeightOrStyleString] = useState<boolean>(true)
   
+  //#endregion
+  
+  // # # # # # # # # # # # # # # # # # # # #
+  // #region Variable Scope IIFEs
+  // # # # # # # # # # # # # # # # # # # # #
+
+  /* (Immediately invoked function expressions)
+  Get the Figma Variable Scopes which were set by the user via UI
+  I do this by reading the state vars and conditonally create 
+  the VariablesScope Array */
+  
 
   const FloatScopes = (function():VariableScope[]{
     
@@ -91,8 +114,6 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     if (letterSpacing) someScopes.push('LETTER_SPACING');
     if (paragraphSpacing) someScopes.push('PARAGRAPH_SPACING');
     if (paragraphIndent) someScopes.push('PARAGRAPH_INDENT');
-
-
     return someScopes
   })();
 
@@ -120,25 +141,28 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     if (textContentString) someScopes.push('TEXT_CONTENT');
     if (fontFamilyString) someScopes.push('FONT_FAMILY');
     if (fontWeightOrStyleString) someScopes.push('FONT_STYLE');
-    
     return someScopes
   })();
 
+  // #endregion
 
-  // # # # # # # # # # # # # 
-  // Events from MAIN
-  // # # # # # # # # # # # # 
-  
+  // # # # # # # # # # # # # # # # # # # # #
+  // #region Events from MAI
+  // # # # # # # # # # # # # # # # # # # # #
+
   once('showFilteredList', function(variableList: VariableItem[]){
     console.log('Plugin: on(showFilteredList)')
     // console.log(variableList)
     setVariableList(variableList)
+    setAmountOfListedVariables (variableList.length)
+    setDisplayBlanket(false)
   })
-  
-  // # # # # # # # # # # # # 
-  // UI Event Handlers
-  // # # # # # # # # # # # # 
 
+  // #endregion
+ 
+  // # # # # # # # # # # # # # # # # # # # #
+  // #region UI Event Handler
+  // # # # # # # # # # # # # # # # # # # # #
 
   function handleTextBoxInput (event: any) {
     const newValue = event.currentTarget.value as string;
@@ -147,13 +171,14 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     clearTimeout(timer)
 
     timer = setTimeout(() => {
-      search(variableTypeFilter, newValue)
+      emit('getFilteredList', variableTypeFilter, newValue)
     }, waitTime)
   }
 
-  function handleSubmit (event: any) {
+  function handleSubmit () {
     console.log('Plugin: handleSubmit')
-    console.log(FloatScopes)
+    if (amountOfListedVariables > 40) setDisplayBlanket(true)
+    // console.log(FloatScopes)
     emit('applyScopes', searchBoxValue, variableTypeFilter, (() => {
       if(variableTypeFilter == 'FLOAT') {return FloatScopes}
       else if (variableTypeFilter == 'STRING') {return  StringScopes}
@@ -161,9 +186,16 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     })())
   }
 
+  function handleTypeControlChange(event: any) {
+    const newValue = event.currentTarget.value as string;
+    setTypeControl(newValue)
+    setVariableTypeFilter(scopeTypeDictionary[newValue as SegmentedControlKey] as VariableResolvedDataType)
+    emit('getFilteredList', scopeTypeDictionary[newValue as SegmentedControlKey] as VariableResolvedDataType, searchBoxValue)
+  }
+
   // float checbox handlers
   const handleAllScopesClick = useCallback(function (event: any){
-    console.log(' all')
+    // console.log(' all')
     const newValue = event.currentTarget.checked as boolean
     setAllFloats(newValue)
     setCornerRadius(newValue)
@@ -245,6 +277,7 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     setParagraphIndend(newValue)
     if (newValue == false) setAllFloats(newValue)
   }, []);
+
   // color checkbox handlers
   const handleAllColorsClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
@@ -256,7 +289,6 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     setStrokeColor(newValue)
     setEffectColor(newValue)
   }, []);
-
   const handleAllFillsClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setAllFills(newValue)
@@ -265,34 +297,29 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     setTextFill(newValue)
     if (newValue == false) setAllColors(newValue)
   }, []);
-
   const handleFrameFillClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setFrameFill(newValue)
     if (newValue == false) setAllFills(newValue)
     if (newValue == false) setAllColors(newValue)
   }, []);
-
   const handleShapeFillClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setShapeFill(newValue)
     if (newValue == false) setAllFills(newValue)
     if (newValue == false) setAllColors(newValue)
   }, []);
-
   const handleTextFillClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setTextFill(newValue)
     if (newValue == false) setAllFills(newValue)
     if (newValue == false) setAllColors(newValue)
   }, []);
-
   const handleStrokeColorClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setStrokeColor(newValue)
     if (newValue == false) setAllColors(newValue)
   }, []);
-
   const handleEffectColorClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setEffectColor(newValue)
@@ -307,59 +334,33 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     setFontFamilyString(newValue)
     setFontWeightOrStyleString(newValue)
   }, []);
-
   const handleTextContentStringClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setTextConentString(newValue)
     if (newValue == false) setAllStrings(newValue)
   }, []);
-
   const handleFontFamilyStringClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setFontFamilyString(newValue)
     if (newValue == false) setAllStrings(newValue)
   }, []);
-
   const handleFontWeightOrStyleStringClick = useCallback(function (event: any){
     const newValue = event.currentTarget.checked as boolean
     setFontWeightOrStyleString(newValue)
     if (newValue == false) setAllStrings(newValue)
   }, []);
 
-  // # # # # # # # # # # # # 
-  // Components
-  // # # # # # # # # # # # # 
+  // #endregion 
 
+  // # # # # # # # # # # # # # # # # # # # #
+  // #region Components
+  // # # # # # # # # # # # # # # # # # # # #
 
-  function VariableItem({variableItem}:{variableItem: VariableItem}) {
+  function VariableItem({variableItem}:{variableItem: VariableItem}): h.JSX.Element {
     // console.log(variableItem)
     // console.log(variableItem.name)
 
-    const scopeDictionary: {[key in VariableScope]?: string} = {
-      'ALL_FILLS': 'All fills',
-      'ALL_SCOPES': 'All scopes',
-      'CORNER_RADIUS': 'Corner radius',
-      'EFFECT_COLOR': 'Effect',
-      'EFFECT_FLOAT': 'Effect',
-      'FONT_FAMILY': 'Font family',
-      'FONT_SIZE': 'Font size',
-      'FONT_STYLE': 'Font weight or style',
-      'FONT_WEIGHT': 'Font weight',
-      'FRAME_FILL': 'Frame Fill',
-      'GAP': 'Gap',
-      'LETTER_SPACING': 'Letter spacing',
-      'LINE_HEIGHT': 'Line height',
-      'OPACITY': 'Layer Opacity',
-      'PARAGRAPH_INDENT': 'Paragraph Indent',
-      'PARAGRAPH_SPACING': 'Paragraph Spacing',
-      'SHAPE_FILL': 'Shape Fill',
-      'STROKE_FLOAT': 'Stroke',
-      'STROKE_COLOR' : 'Stroke',
-      'TEXT_CONTENT': 'Text content',
-      'TEXT_FILL': 'Text fill',
-      'WIDTH_HEIGHT' : 'Widht and height',
-    }
-
+    
     const humanReadableScope = variableItem.scopes.map((scope: VariableScope) => {
       return scopeDictionary[scope]
     })
@@ -374,7 +375,7 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     )
   }
 
-  function FloatSideBar() {
+  function FloatSideBar(): h.JSX.Element {
     return (
       <section class={styles.sideBar}>
 
@@ -465,7 +466,7 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     )
   }
 
-  function ColorSideBar() {
+  function ColorSideBar(): h.JSX.Element  {
     return (
       <section class={styles.sideBar}>
 
@@ -483,7 +484,7 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
     )
   }
 
-  function StringSideBar() {
+  function StringSideBar(): h.JSX.Element  {
     return (
       <section class={styles.sideBar}>
 
@@ -510,26 +511,14 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
       </section>
     )
   }
-  
-  // # # # # # # # # # # # # 
-  // UI
-  // # # # # # # # # # # # # 
 
-  const typeControlOptions = [{
-    value: 'Float'
-  }, {
-    value:'Color'
-  },
-  {
-    value: 'String'
-  }]
+  // #endregion
+ 
+  // # # # # # # # # # # # # # # # # # # # #
+  // #region RETURNS
+  // # # # # # # # # # # # # # # # # # # # #
 
-  function handleTypeControlChange(event: any) {
-    const newValue = event.currentTarget.value as string;
-    setTypeControl(newValue)
-    setVariableTypeFilter(newValue.toUpperCase() as VariableResolvedDataType)
-    emit('getFilteredList', newValue.toUpperCase(), searchBoxValue)
-  }
+
 
   return( 
     <div class={styles.mainContainer}>
@@ -541,6 +530,17 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
           <SegmentedControl onChange={handleTypeControlChange} options={typeControlOptions} value={typeControl} />
         </div>
         <section class={styles.variableList}>
+          <p class={styles.variableScope}>
+            {(() => {
+              if (amountOfListedVariables <= 0 && searchBoxValue) {
+                return `I couldn't find any variables matching "${searchBoxValue}" in "${typeControl}".`
+              } else if (amountOfListedVariables <= 0) {
+                return `I could not find any variables of type "${typeControl}". Try choosing a different type.`
+              } else {
+                return `I found ${amountOfListedVariables} variables:`;
+              }
+            })()}
+          </p>
           {variableList.map((variable) => (
             <VariableItem variableItem={variable}></VariableItem>
           ))}
@@ -551,14 +551,20 @@ function Plugin(props: { greeting: string, variableList: VariableItem[]}) {
       </section>
       {variableTypeFilter === 'FLOAT' ? (
         <FloatSideBar />
-        ) : variableTypeFilter === 'COLOR' ? (
+      ) : variableTypeFilter === 'COLOR' ? (
         <ColorSideBar />
-        ) : variableTypeFilter === 'STRING' ? (
-          <StringSideBar />
-        ) : null}
-      
+      ) : variableTypeFilter === 'STRING' ? (
+        <StringSideBar />
+      ) : null}
+      {displayBlanket === true ? (
+        <div class={styles.blanket}>
+          <Text>Updating {amountOfListedVariables} variables... This may take a while</Text>
+        </div>
+      ) : null}
     </div>
   )
+
+  //#endregion
 }
 
 export default render(Plugin)

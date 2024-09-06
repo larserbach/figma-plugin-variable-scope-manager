@@ -11,3 +11,6 @@ export interface VariableItem {
   scopes: VariableScope[];
   resolvedType: VariableResolvedDataType
 }
+
+export type SegmentedControlKey = 'Numbers' | 'Colors' | 'Strings';
+

@@ -103,3 +103,17 @@ p.variableScope {
   padding-left: 16px;
   gap: 16px;
 }
+
+.blanket {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: var(--figma-color-bg);
+  opacity: 0.8;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
