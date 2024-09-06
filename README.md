@@ -15,6 +15,8 @@ This plugin is your new best friend for managing variable scopes in Figma. It's 
 
 It's that simple! This plugin is perfect for keeping your variables organized and your workflow smooth. So go ahead, give it a spin, and take control of your Figma variables like never before! 🚀
 
+☕️ Buy me a coffee (https://buymeacoffee.com/lazerbach)
+
 ### Don't miss out on these other pro tools
 
 *[Variables everywhere](https://www.figma.com/community/plugin/1404403514737707928/variables-everywhere)*
