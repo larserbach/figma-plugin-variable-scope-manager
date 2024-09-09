@@ -1,4 +1,4 @@
-# Variable Scope Manager.
+# Variable Scope Manager
 
 ## 👋 What's this nifty plugin all about?
 This plugin is your new best friend for managing variable scopes in Figma. It's designed to help you quickly filter, search, and modify the scopes of your local variables without breaking a sweat.
