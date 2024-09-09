@@ -22,8 +22,8 @@
     "editorType": [
       "figma"
     ],
-    "id": "batch-scope-variables",
-    "name": "Batch Scope Variables",
+    "id": "variable-scope-manager",
+    "name": "Variable Scope Manager",
     "main": "src/main.ts",
     "ui": "src/ui.tsx",
     "documentAccess": "dynamic-page"
