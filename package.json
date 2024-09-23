@@ -29,8 +29,12 @@
     "documentAccess": "dynamic-page",
     "networkAccess": {
       "allowedDomains": [
-        "none"
-      ]
-    }
+        "https://api.mixpanel.com"
+      ],
+      "reasoning": "Plugin sends userdata to api.mixpanel.com for anylytics"
+    },
+    "permissions": [
+      "currentuser"
+    ]
   }
 }

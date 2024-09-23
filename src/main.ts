@@ -4,12 +4,8 @@ import { ResizeWindowHandler, VariableItem } from './types'
 
 export default async function () {
   // console.log("- - - - main ts - - - - -")
-
-  // const testVars = await figma.variables.getLocalVariablesAsync('STRING');
-  // testVars.forEach(variable => {
-  //   // console.log(`${variable.name} -> ${variable.scopes}`)
-  // })
-
+  const userID = figma.currentUser?.id
+  
   on<ResizeWindowHandler>(
     'RESIZE_WINDOW',
     function (windowSize: { width: number; height: number }) {
@@ -40,53 +36,50 @@ export default async function () {
   const data = {
     initialType: 'FLOAT',
     variableList: await getListForUI('FLOAT'), // type needs to be in sync with Plugins stateVar 'variableTypeFilter'
+    userID: userID
   }
 
   showUI(options, data)
 
+  emit('initMixPanel', {})
+}
 
-  // # # # # # # # # # # # # # # #
-
-
-
-  async function changeScope(searchString: string, resolvedType: VariableResolvedDataType, scopes: VariableScope[] ) {
-    // console.log(`Main - changeScope`)
-    // console.log(`searchString : ${searchString}`)
-    // console.log(`resolvedType : ${resolvedType}`)
-    // console.log(`scopes : ${scopes}`)
-    const localVariables = await figma.variables.getLocalVariablesAsync(resolvedType);
-    localVariables.forEach(variable => {
-      if (variable.name.toLowerCase().includes(searchString.toLowerCase())){
-        variable.scopes = scopes
-      }
-    }); 
-  }
-  
-  async function getListForUI(resolvedType: VariableResolvedDataType, searchString?:string): Promise<VariableItem[]> {
-    // console.log('Main - getListForUI')
-    const localVariables = await figma.variables.getLocalVariablesAsync(resolvedType);
-    let variableList : VariableItem[] = []
-
-    if (searchString != undefined && searchString.length) {
-      const filteredList: Variable[] = localVariables.filter((variable) => {
-        return variable.name.toLocaleLowerCase().includes(searchString.toLocaleLowerCase())
-      })
-      variableList = filteredList.map(variable => {
-        const {id, name, scopes, resolvedType} = variable
-        return {id, name, scopes, resolvedType}
-      })
+async function changeScope(searchString: string, resolvedType: VariableResolvedDataType, scopes: VariableScope[] ) {
+  // console.log(`Main - changeScope`)
+  // console.log(`searchString : ${searchString}`)
+  // console.log(`resolvedType : ${resolvedType}`)
+  // console.log(`scopes : ${scopes}`)
+  const localVariables = await figma.variables.getLocalVariablesAsync(resolvedType);
+  localVariables.forEach(variable => {
+    if (variable.name.toLowerCase().includes(searchString.toLowerCase())){
+      variable.scopes = scopes
     }
+  }); 
+}
 
-    else if(searchString == undefined || !searchString.length){
-      variableList = localVariables.map(variable => {
-        const {id, name, scopes, resolvedType} = variable
-        return {id, name, scopes, resolvedType}
-    })}
-    
-    // console.log(variableList)
-    // console.log('variableList')
+async function getListForUI(resolvedType: VariableResolvedDataType, searchString?:string): Promise<VariableItem[]> {
+  // console.log('Main - getListForUI')
+  const localVariables = await figma.variables.getLocalVariablesAsync(resolvedType);
+  let variableList : VariableItem[] = []
 
-    return variableList
+  if (searchString != undefined && searchString.length) {
+    const filteredList: Variable[] = localVariables.filter((variable) => {
+      return variable.name.toLocaleLowerCase().includes(searchString.toLocaleLowerCase())
+    })
+    variableList = filteredList.map(variable => {
+      const {id, name, scopes, resolvedType} = variable
+      return {id, name, scopes, resolvedType}
+    })
   }
 
+  else if(searchString == undefined || !searchString.length){
+    variableList = localVariables.map(variable => {
+      const {id, name, scopes, resolvedType} = variable
+      return {id, name, scopes, resolvedType}
+  })}
+  
+  // console.log(variableList)
+  // console.log('variableList')
+
+  return variableList
 }

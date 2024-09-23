@@ -1,33 +1,57 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { render, SegmentedControl, Text, useWindowResize, Checkbox, Textbox, Button} from '@create-figma-plugin/ui'
+import { render, SegmentedControl, Text, useWindowResize, Checkbox, Textbox, Button } from '@create-figma-plugin/ui'
 import { emit, once } from '@create-figma-plugin/utilities'
-import {h} from 'preact'
+import { h } from 'preact'
 
-import { ResizeWindowHandler, VariableItem, SegmentedControlKey} from './types'
+import { ResizeWindowHandler, VariableItem, SegmentedControlKey } from './types'
 import { useCallback, useState } from 'preact/hooks';
 import styles from './styles.css'
-import {customIcon} from './customIcons'
+import { customIcon } from './customIcons'
 import { scopeDictionary } from './scopeDictionary';
 
+import Mixpanel from "./mixpanel";
+import { mixpanelToken } from "./private_mixpanelToken"; // It's just this: mixpanelToken:string = "YOUR_PROJECT_TOKEN"
+const mixpanel = new Mixpanel(mixpanelToken)
 
 let timer: ReturnType<typeof setTimeout>;
 const waitTime: number = 200;
-const scopeTypeDictionary: {[key in SegmentedControlKey]: VariableResolvedDataType} = {
+const scopeTypeDictionary: { [key in SegmentedControlKey]: VariableResolvedDataType } = {
   'Numbers': 'FLOAT',
   'Colors': 'COLOR',
-  'Strings': 'STRING' 
+  'Strings': 'STRING'
 }
-const typeControlOptions: {value: SegmentedControlKey}[] = [
-  {value: 'Numbers'}, 
-  {value: 'Colors'},
-  {value: 'Strings'}
+const typeControlOptions: { value: SegmentedControlKey }[] = [
+  { value: 'Numbers' },
+  { value: 'Colors' },
+  { value: 'Strings' }
 ]
 
 
-function Plugin(props: { initialType: VariableResolvedDataType, variableList: VariableItem[]}) {
+
+async function sendDataToMixPanel(data: { searchstring: string, variableTypeFilter: VariableResolvedDataType, scopes: VariableScope[], matchingVars: number }) {
+  try {
+    console.log('try sending data')
+    const response = await mixpanel.track('apply scopes', data);
+    console.log(response)
+  } catch (error) {
+    console.error('NOT ABLE TO SEND DATA')
+    console.error(error)
+  }
+}
+
+function Plugin(props: { initialType: VariableResolvedDataType, variableList: VariableItem[], userID: string | null | undefined }) {
 
   // console.log('PLUGIN')
-  
+
+  once('initMixPanel', function () {
+    console.log('innitMixPanel');
+    if (typeof props.userID == 'string') {
+      mixpanel.identify(props.userID)
+    } else {
+      console.error('could not retrieve user id')
+    }
+  })
+
   // # # # # # # # # # # # # # # # # # # # #
   // #region Window Resizing
   // # # # # # # # # # # # # # # # # # # # #
@@ -51,7 +75,7 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
   const [variableList, setVariableList] = useState<VariableItem[]>(props.variableList)
   const [searchBoxValue, setSearchBoxValue] = useState<string>('')
   const [variableTypeFilter, setVariableTypeFilter] = useState<VariableResolvedDataType>(props.initialType)
-  const [displayBlanket, setDisplayBlanket] = useState<boolean>(false) 
+  const [displayBlanket, setDisplayBlanket] = useState<boolean>(false)
   const [typeControl, setTypeControl] = useState<string>('Numbers')
   const [amountOfListedVariables, setAmountOfListedVariables] = useState<number>(variableList.length)
   // scope checkboxes Float
@@ -82,9 +106,9 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
   const [textContentString, setTextConentString] = useState<boolean>(true)
   const [fontFamilyString, setFontFamilyString] = useState<boolean>(true)
   const [fontWeightOrStyleString, setFontWeightOrStyleString] = useState<boolean>(true)
-  
+
   //#endregion
-  
+
   // # # # # # # # # # # # # # # # # # # # #
   // #region Variable Scope IIFEs
   // # # # # # # # # # # # # # # # # # # # #
@@ -93,12 +117,12 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
   Get the Figma Variable Scopes which were set by the user via UI
   I do this by reading the state vars and conditonally create 
   the VariablesScope Array */
-  
 
-  const FloatScopes = (function():VariableScope[]{
-    
-    if(allFloats == true) return ['ALL_SCOPES']
-    
+
+  const FloatScopes = (function (): VariableScope[] {
+
+    if (allFloats == true) return ['ALL_SCOPES']
+
     const someScopes: VariableScope[] = []
 
     if (cornerRadius) someScopes.push('CORNER_RADIUS');
@@ -117,10 +141,10 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
     return someScopes
   })();
 
-  const ColorScopes = (function():VariableScope[]{
-    
-    if(allColors == true) return ['ALL_SCOPES']
-    
+  const ColorScopes = (function (): VariableScope[] {
+
+    if (allColors == true) return ['ALL_SCOPES']
+
     const someScopes: VariableScope[] = []
 
     if (allFills) someScopes.push('ALL_FILLS');
@@ -132,10 +156,10 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
     return someScopes
   })();
 
-  const StringScopes = (function():VariableScope[]{
-    
-    if(allStrings == true) return ['ALL_SCOPES']
-    
+  const StringScopes = (function (): VariableScope[] {
+
+    if (allStrings == true) return ['ALL_SCOPES']
+
     const someScopes: VariableScope[] = []
 
     if (textContentString) someScopes.push('TEXT_CONTENT');
@@ -147,24 +171,24 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
   // #endregion
 
   // # # # # # # # # # # # # # # # # # # # #
-  // #region Events from MAI
+  // #region Events from MAIN
   // # # # # # # # # # # # # # # # # # # # #
 
-  once('showFilteredList', function(variableList: VariableItem[]){
+  once('showFilteredList', function (variableList: VariableItem[]) {
     console.log('Plugin: on(showFilteredList)')
     // console.log(variableList)
     setVariableList(variableList)
-    setAmountOfListedVariables (variableList.length)
+    setAmountOfListedVariables(variableList.length)
     setDisplayBlanket(false)
   })
 
   // #endregion
- 
+
   // # # # # # # # # # # # # # # # # # # # #
   // #region UI Event Handler
   // # # # # # # # # # # # # # # # # # # # #
 
-  function handleTextBoxInput (event: any) {
+  function handleTextBoxInput(event: any) {
     const newValue = event.currentTarget.value as string;
     setSearchBoxValue(newValue);
 
@@ -175,15 +199,24 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
     }, waitTime)
   }
 
-  function handleSubmit () {
+  function handleSubmit() {
     console.log('Plugin: handleSubmit')
     if (amountOfListedVariables > 40) setDisplayBlanket(true)
     // console.log(FloatScopes)
-    emit('applyScopes', searchBoxValue, variableTypeFilter, (() => {
-      if(variableTypeFilter == 'FLOAT') {return FloatScopes}
-      else if (variableTypeFilter == 'STRING') {return  StringScopes}
-      else if (variableTypeFilter == 'COLOR') {return  ColorScopes}
-    })())
+
+    const scopes = (() => {
+      if (variableTypeFilter == 'FLOAT') { return FloatScopes }
+      else if (variableTypeFilter == 'STRING') { return StringScopes }
+      else if (variableTypeFilter == 'COLOR') { return ColorScopes }
+      else {
+        throw new Error('error on handleSubmit: variableTypeFilter does not match \'FLOAT\' |  \'STRING\' |  \'COLOR\'')
+      }
+    })()
+
+
+    sendDataToMixPanel({ searchstring: searchBoxValue, variableTypeFilter: variableTypeFilter, scopes: scopes, matchingVars: amountOfListedVariables })
+
+    emit('applyScopes', searchBoxValue, variableTypeFilter, scopes)
   }
 
   function handleTypeControlChange(event: any) {
@@ -194,7 +227,7 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
   }
 
   // float checbox handlers
-  const handleAllScopesClick = useCallback(function (event: any){
+  const handleAllScopesClick = useCallback(function (event: any) {
     // console.log(' all')
     const newValue = event.currentTarget.checked as boolean
     setAllFloats(newValue)
@@ -212,74 +245,74 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
     setParagraphSpacing(newValue)
     setParagraphIndend(newValue)
   }, []);
-  const handleCornerRadiusClick = useCallback(function (event: any){
+  const handleCornerRadiusClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setCornerRadius(newValue)
     if (newValue == false) setAllFloats(newValue)
   }, []);
-  const handleWidthAndHeightClick = useCallback(function (event: any){
+  const handleWidthAndHeightClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setWidthAndHeight(newValue)
     if (newValue == false) setAllFloats(newValue)
   }, []);
-  const handleGapClick = useCallback(function (event: any){
+  const handleGapClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setGap(newValue)
     if (newValue == false) setAllFloats(newValue)
   }, []);
-  const handleTextContentClick = useCallback(function (event: any){
+  const handleTextContentClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setTextContent(newValue)
     if (newValue == false) setAllFloats(newValue)
   }, []);
-  const handleStrokeClick = useCallback(function (event: any){
+  const handleStrokeClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setStroke(newValue)
     if (newValue == false) setAllFloats(newValue)
   }, []);
-  const handleLayerOpacityClick = useCallback(function (event: any){
+  const handleLayerOpacityClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setLayerOpacity(newValue)
     if (newValue == false) setAllFloats(newValue)
   }, []);
-  const handleEffectsClick = useCallback(function (event: any){
+  const handleEffectsClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setEffects(newValue)
     if (newValue == false) setAllFloats(newValue)
   }, []);
-  const handleFontWeightClick = useCallback(function (event: any){
+  const handleFontWeightClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setFontWeight(newValue)
     if (newValue == false) setAllFloats(newValue)
   }, []);
-  const handleFontSizeClick = useCallback(function (event: any){
+  const handleFontSizeClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setFontSize(newValue)
     if (newValue == false) setAllFloats(newValue)
   }, []);
-  const handleLineHeightClick = useCallback(function (event: any){
+  const handleLineHeightClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setLineHeight(newValue)
     if (newValue == false) setAllFloats(newValue)
   }, []);
-  const handleLetterSpacingClick = useCallback(function (event: any){
+  const handleLetterSpacingClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setLetterSpacing(newValue)
     if (newValue == false) setAllFloats(newValue)
   }, []);
-  const handleParagraphSpacingClick = useCallback(function (event: any){
+  const handleParagraphSpacingClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setParagraphSpacing(newValue)
     if (newValue == false) setAllFloats(newValue)
   }, []);
-  const handleParagraphIndendClick = useCallback(function (event: any){
+  const handleParagraphIndendClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setParagraphIndend(newValue)
     if (newValue == false) setAllFloats(newValue)
   }, []);
 
   // color checkbox handlers
-  const handleAllColorsClick = useCallback(function (event: any){
+  const handleAllColorsClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setAllColors(newValue)
     setAllFills(newValue)
@@ -289,7 +322,7 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
     setStrokeColor(newValue)
     setEffectColor(newValue)
   }, []);
-  const handleAllFillsClick = useCallback(function (event: any){
+  const handleAllFillsClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setAllFills(newValue)
     setFrameFill(newValue)
@@ -297,54 +330,54 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
     setTextFill(newValue)
     if (newValue == false) setAllColors(newValue)
   }, []);
-  const handleFrameFillClick = useCallback(function (event: any){
+  const handleFrameFillClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setFrameFill(newValue)
     if (newValue == false) setAllFills(newValue)
     if (newValue == false) setAllColors(newValue)
   }, []);
-  const handleShapeFillClick = useCallback(function (event: any){
+  const handleShapeFillClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setShapeFill(newValue)
     if (newValue == false) setAllFills(newValue)
     if (newValue == false) setAllColors(newValue)
   }, []);
-  const handleTextFillClick = useCallback(function (event: any){
+  const handleTextFillClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setTextFill(newValue)
     if (newValue == false) setAllFills(newValue)
     if (newValue == false) setAllColors(newValue)
   }, []);
-  const handleStrokeColorClick = useCallback(function (event: any){
+  const handleStrokeColorClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setStrokeColor(newValue)
     if (newValue == false) setAllColors(newValue)
   }, []);
-  const handleEffectColorClick = useCallback(function (event: any){
+  const handleEffectColorClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setEffectColor(newValue)
     if (newValue == false) setAllColors(newValue)
   }, []);
 
   // string checkbox handlers
-  const handleAllStringsClick = useCallback(function (event: any){
+  const handleAllStringsClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setAllStrings(newValue)
     setTextConentString(newValue)
     setFontFamilyString(newValue)
     setFontWeightOrStyleString(newValue)
   }, []);
-  const handleTextContentStringClick = useCallback(function (event: any){
+  const handleTextContentStringClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setTextConentString(newValue)
     if (newValue == false) setAllStrings(newValue)
   }, []);
-  const handleFontFamilyStringClick = useCallback(function (event: any){
+  const handleFontFamilyStringClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setFontFamilyString(newValue)
     if (newValue == false) setAllStrings(newValue)
   }, []);
-  const handleFontWeightOrStyleStringClick = useCallback(function (event: any){
+  const handleFontWeightOrStyleStringClick = useCallback(function (event: any) {
     const newValue = event.currentTarget.checked as boolean
     setFontWeightOrStyleString(newValue)
     if (newValue == false) setAllStrings(newValue)
@@ -356,11 +389,11 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
   // #region Components
   // # # # # # # # # # # # # # # # # # # # #
 
-  function VariableItem({variableItem}:{variableItem: VariableItem}): h.JSX.Element {
+  function VariableItem({ variableItem }: { variableItem: VariableItem }): h.JSX.Element {
     // console.log(variableItem)
     // console.log(variableItem.name)
 
-    
+
     const humanReadableScope = variableItem.scopes.map((scope: VariableScope) => {
       return scopeDictionary[scope]
     })
@@ -425,7 +458,7 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
         </Checkbox>
 
         <Text>{'Typography'}</Text>
-        
+
         <Checkbox onChange={handleFontWeightClick} value={fontWeight}>
           <div class={styles.checkbox_label}>
             {customIcon.fontWeightIcon}
@@ -466,7 +499,7 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
     )
   }
 
-  function ColorSideBar(): h.JSX.Element  {
+  function ColorSideBar(): h.JSX.Element {
     return (
       <section class={styles.sideBar}>
 
@@ -479,12 +512,12 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
           <Checkbox onChange={handleTextFillClick} value={textFill}><Text>Text</Text></Checkbox>
         </div>
         <Checkbox onChange={handleStrokeColorClick} value={strokeColor}><Text>Stroke</Text></Checkbox>
-        <Checkbox onChange={handleEffectColorClick} value={effectColor}><Text>Effects</Text></Checkbox>  
+        <Checkbox onChange={handleEffectColorClick} value={effectColor}><Text>Effects</Text></Checkbox>
       </section>
     )
   }
 
-  function StringSideBar(): h.JSX.Element  {
+  function StringSideBar(): h.JSX.Element {
     return (
       <section class={styles.sideBar}>
 
@@ -501,26 +534,26 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
             {customIcon.fontSizeIcon}
             <Text>Font family</Text>
           </div>
-          </Checkbox>
+        </Checkbox>
         <Checkbox onChange={handleFontWeightOrStyleStringClick} value={fontWeightOrStyleString}>
           <div class={styles.checkbox_label}>
             {customIcon.fontWeightIcon}
             <Text>Font weight or style</Text>
           </div>
-        </Checkbox>  
+        </Checkbox>
       </section>
     )
   }
 
   // #endregion
- 
+
   // # # # # # # # # # # # # # # # # # # # #
   // #region RETURNS
   // # # # # # # # # # # # # # # # # # # # #
 
 
 
-  return( 
+  return (
     <div class={styles.mainContainer}>
 
       <section class={styles.contentSection}>
