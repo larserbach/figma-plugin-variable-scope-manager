@@ -30,8 +30,19 @@ const typeControlOptions: { value: SegmentedControlKey }[] = [
 
 async function sendDataToMixPanel(data: { searchstring: string, variableTypeFilter: VariableResolvedDataType, scopes: VariableScope[], matchingVars: number }) {
   try {
-    console.log('try sending data')
+    // console.log('try sending data')
     const response = await mixpanel.track('apply scopes', data);
+    console.log(response)
+  } catch (error) {
+    console.error('NOT ABLE TO SEND DATA')
+    console.error(error)
+  }
+}
+
+async function logPluginStartToMixPanel() {
+  try {
+    // console.log('try sending data')
+    const response = await mixpanel.track('opens plugin');
     console.log(response)
   } catch (error) {
     console.error('NOT ABLE TO SEND DATA')
@@ -47,6 +58,7 @@ function Plugin(props: { initialType: VariableResolvedDataType, variableList: Va
     console.log('innitMixPanel');
     if (typeof props.userID == 'string') {
       mixpanel.identify(props.userID)
+      logPluginStartToMixPanel()
     } else {
       console.error('could not retrieve user id')
     }
